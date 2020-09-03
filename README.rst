@@ -26,6 +26,20 @@ After you've installed etcddump, the program ``etcdumper`` will be available on 
 
 The only dependency of ``etcddump`` is  `python-ectd <https://github.com/jplana/python-etcd>`_ version 0.3.0 or later.
 
+Portable pyz package
+--------------------
+
+You can build portable package with all dependencies embedded by running ``pyzbuild.cmd`` on Windows.
+
+The ``etcddump.pyz`` package can run on not only Windows but also other operating systems like Linux.
+
+.. code:: bash
+
+    $ chmod +x etcddump.pyz
+    $ ./etcddump.pyz --help
+
+The script for packaging is written & added by `Youhei Sakurai <https://github.com/sakurai-youhei>`.
+
 Usage
 -----
 
