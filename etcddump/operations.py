@@ -1,4 +1,7 @@
-from urlparse import urlparse
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 import etcd
 import json
 import sys
@@ -32,7 +35,8 @@ class Dumper(BaseOperations):
         data = self.client.read('/', recursive=True)
         d = {}
         for entry in data.children:
-            d[entry.modifiedIndex] = self.entry_from_result(entry)
+            if entry.key:
+                d[entry.modifiedIndex] = self.entry_from_result(entry)
 
         indexes = sorted(d.keys())
         dumplist = []
@@ -73,9 +77,18 @@ class Restorer(BaseOperations):
 
     def fillin(self, idx, lastidx):
         while (idx < (lastidx - 1)):
-            r = self.write(fake_entry)
+            r = self.write(self.fake_entry())
             idx = r.modifiedIndex
         return idx
 
+    def escape(self, key, value, dir, **kwargs):
+        if not isinstance(key, str):
+            key = key.encode('utf-8')
+        if not dir:
+            value = value.encode('utf-8')
+        escaped = dict(key=key, value=value, dir=dir)
+        escaped.update(kwargs)
+        return escaped
+
     def write(self, entry):
-	return self.client.write(entry['key'].encode('utf-8'), entry['value'].encode('utf-8'), ttl = entry['ttl'], dir = entry['dir'])        
+        return self.client.write(**self.escape(**entry))
