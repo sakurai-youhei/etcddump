@@ -12,11 +12,15 @@ class BaseOperations(object):
     def __init__(self, url='http://localhost:4001'):
         self.get_client(url)
 
-
     def get_client(self, url, ca_cert=None, cert=None):
         parsed = urlparse(url)
         (h, p) = parsed.netloc.split(':')
-        self.client = etcd.Client(host=h, port=int(p), protocol=parsed.scheme, allow_reconnect=False, ca_cert=ca_cert, cert=cert)
+        self.client = etcd.Client(host=h,
+                                  port=int(p),
+                                  protocol=parsed.scheme,
+                                  allow_reconnect=False,
+                                  ca_cert=ca_cert,
+                                  cert=cert)
 
     def entry_from_result(self, entry):
         return {
@@ -29,7 +33,6 @@ class BaseOperations(object):
 
 
 class Dumper(BaseOperations):
-
 
     def dump(self, filename=None):
         data = self.client.read('/', recursive=True)
@@ -45,9 +48,10 @@ class Dumper(BaseOperations):
 
         if filename:
             with open(filename, 'w') as f:
-                json.dump(dumplist,f)
+                json.dump(dumplist, f)
         else:
             print(json.dumps(dumplist))
+
 
 class Restorer(BaseOperations):
     def fake_entry(self):
