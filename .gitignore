@@ -2,6 +2,7 @@
 .pydevproject
 .settings
 etcd*.exe
+default.etcd/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
