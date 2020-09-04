@@ -38,7 +38,7 @@ The ``etcddump.pyz`` package can run on not only Windows but also other operatin
     $ chmod +x etcddump.pyz
     $ ./etcddump.pyz --help
 
-The script for packaging is written & added by `Youhei Sakurai <https://github.com/sakurai-youhei>`.
+The script for packaging is written & added by `Youhei Sakurai <https://github.com/sakurai-youhei>`_.
 
 Usage
 -----
