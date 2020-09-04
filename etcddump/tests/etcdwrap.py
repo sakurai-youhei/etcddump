@@ -4,6 +4,7 @@ Created on 2020/09/03
 @author: sakurai
 '''
 from atexit import register
+from contextlib import closing
 from shutil import rmtree
 from socket import AF_INET
 from socket import SO_REUSEADDR
@@ -20,9 +21,6 @@ from tempfile import mkdtemp
 from time import sleep
 
 
-from contextlib import closing
-
-
 def find_free_port():
     """https://stackoverflow.com/a/45690594"""
     with closing(socket(AF_INET, SOCK_STREAM)) as s:
@@ -37,7 +35,8 @@ class EtcdWrap(Popen):
     def __init__(self, **kwargs):
         self.host = "localhost"
         self.port = find_free_port()
-        self.listen_client_urls = ["http://{}:{}".format(self.host, self.port)]
+        self.client_urls = ["http://{}:{}".format(self.host, self.port)]
+        self.peer_urls = ["http://{}:{}".format(self.host, find_free_port())]
 
         tempdir = mkdtemp()
         register(rmtree, tempdir)
@@ -45,9 +44,11 @@ class EtcdWrap(Popen):
                           "--debug",
                           "--data-dir", tempdir,
                           "--listen-client-urls",
-                          ",".join(self.listen_client_urls),
+                          ",".join(self.client_urls),
                           "--advertise-client-urls",
-                          ",".join(self.listen_client_urls)]
+                          ",".join(self.client_urls),
+                          "--listen-peer-urls",
+                          ",".join(self.peer_urls)]
         kwargs["stderr"] = DEVNULL
         Popen.__init__(self, **kwargs)
 

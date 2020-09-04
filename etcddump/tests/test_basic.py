@@ -41,37 +41,39 @@ if "ETCDDUMP_ETCD" in environ:
     EtcdWrap._etcd_ = environ["ETCDDUMP_ETCD"]
 
 
-class BaseTestOnPy3(TestCase):
+def _randompath(length):
+    return urlparse("///" + "".join(choices(printable, k=length - 1))).path
 
-    def _randompath(self, length):
-        return urlparse("///" + "".join(choices(printable, k=length - 1))).path
 
-    def _testdata(self, length, count):
-        with EtcdWrap() as etcd:
-            try:
-                client = Client(etcd.host, etcd.port)
-                while count:
-                    path = self._randompath(length)
-                    data = "".join(choices(printable, k=length))
-                    try:
-                        client.write(path, data)
-                        if data == client.read(path):
-                            yield path, data
-                    except Exception:
-                        pass
-                    count -= 1
-            finally:
-                etcd.terminate()
+def testdata(length, count):
+    with EtcdWrap() as etcd:
+        try:
+            client = Client(etcd.host, etcd.port)
+            while count:
+                path = _randompath(length)
+                data = "".join(choices(printable, k=length))
+                try:
+                    client.write(path, data)
+                    if data == client.read(path):
+                        yield path, data
+                except Exception:
+                    pass
+                count -= 1
+        finally:
+            etcd.terminate()
 
-    def _tempfile(self):
-        with NamedTemporaryFile(delete=False) as fp:
-            register(remove, fp.name)
-            return fp.name
 
+def tempfile():
+    with NamedTemporaryFile(delete=False) as fp:
+        register(remove, fp.name)
+        return fp.name
+
+
+class BasicTest(TestCase):
     def assertRestration(self, backup, expects, msg=None):
         with EtcdWrap() as etcd:
             try:
-                Restorer(etcd.listen_client_urls[0]).restore(filename=backup)
+                Restorer(etcd.client_urls[0]).restore(filename=backup)
                 client = Client(etcd.host, etcd.port)
                 for key in expects:
                     self.assertEqual(client.read(key).value, expects[key], msg)
@@ -80,11 +82,11 @@ class BaseTestOnPy3(TestCase):
 
     @skipIf(not EtcdWrap.is_available(), "No etcd command available")
     def test_empty_backup_restore(self):
-        backup = self._tempfile()
+        backup = tempfile()
 
         with EtcdWrap() as etcd:
             try:
-                Dumper(etcd.listen_client_urls[0]).dump(filename=backup)
+                Dumper(etcd.client_urls[0]).dump(filename=backup)
             finally:
                 etcd.terminate()
 
@@ -93,7 +95,7 @@ class BaseTestOnPy3(TestCase):
 
     @skipIf(not EtcdWrap.is_available(), "No etcd command available")
     def test_a_few_dirs_backup_restore(self):
-        backup = self._tempfile()
+        backup = tempfile()
 
         with EtcdWrap() as etcd:
             try:
@@ -101,7 +103,7 @@ class BaseTestOnPy3(TestCase):
                 client.write("/a", None, dir=True)
                 client.write("/b", None, dir=True)
                 client.write("/c", None, dir=True)
-                Dumper(etcd.listen_client_urls[0]).dump(filename=backup)
+                Dumper(etcd.client_urls[0]).dump(filename=backup)
             finally:
                 etcd.terminate()
 
@@ -110,7 +112,7 @@ class BaseTestOnPy3(TestCase):
 
     @skipIf(not EtcdWrap.is_available(), "No etcd command available")
     def test_unicode_backup_restore(self):
-        backup = self._tempfile()
+        backup = tempfile()
 
         with EtcdWrap() as etcd:
             try:
@@ -120,7 +122,7 @@ class BaseTestOnPy3(TestCase):
                 else:
                     client.write(u"/パス".encode("utf-8"),
                                  u"/データ".encode("utf-8"))
-                Dumper(etcd.listen_client_urls[0]).dump(filename=backup)
+                Dumper(etcd.client_urls[0]).dump(filename=backup)
             finally:
                 etcd.terminate()
 
@@ -128,16 +130,16 @@ class BaseTestOnPy3(TestCase):
         self.assertRestration(backup, {u"/パス": u"/データ"})
 
     @skipIf(not EtcdWrap.is_available(), "No etcd command available")
-    def test_fuzzy_backup_restore(self):
-        data = dict(self._testdata(256, 100))
-        backup = self._tempfile()
+    def test_fuzzing_backup_restore(self):
+        data = dict(testdata(256, 100))
+        backup = tempfile()
 
         with EtcdWrap() as etcd:
             try:
                 client = Client(etcd.host, etcd.port)
                 for key in data.copy():
                     client.write(key, data[key])
-                Dumper(etcd.listen_client_urls[0]).dump(filename=backup)
+                Dumper(etcd.client_urls[0]).dump(filename=backup)
             finally:
                 etcd.terminate()
 

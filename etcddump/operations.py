@@ -1,10 +1,12 @@
+from codecs import open
+import json
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
-import etcd
-import json
 import sys
+
+import etcd
 
 
 class BaseOperations(object):
@@ -33,21 +35,15 @@ class BaseOperations(object):
 
 
 class Dumper(BaseOperations):
+    def walk(self, key):
+        for entry in self.client.read(key, recursive=True).children:
+            if entry.key:
+                yield entry.modifiedIndex, self.entry_from_result(entry)
 
     def dump(self, filename=None):
-        data = self.client.read('/', recursive=True)
-        d = {}
-        for entry in data.children:
-            if entry.key:
-                d[entry.modifiedIndex] = self.entry_from_result(entry)
-
-        indexes = sorted(d.keys())
-        dumplist = []
-        for idx in indexes:
-            dumplist.append(d[idx])
-
+        dumplist = [entry for _, entry in sorted(self.walk('/'))]
         if filename:
-            with open(filename, 'w') as f:
+            with open(filename, 'w', encoding="utf-8") as f:
                 json.dump(dumplist, f)
         else:
             print(json.dumps(dumplist))
@@ -64,7 +60,7 @@ class Restorer(BaseOperations):
 
     def restore(self, filename=None, preserve_indexes=False):
         if filename:
-            with open(filename, 'rb') as f:
+            with open(filename, 'r', encoding="utf-8") as f:
                 data = json.load(f)
         else:
             with sys.stdin as f:
@@ -85,12 +81,12 @@ class Restorer(BaseOperations):
             idx = r.modifiedIndex
         return idx
 
-    def escape(self, key, value, dir, **kwargs):
+    def escape(self, key, value, **kwargs):
         if not isinstance(key, str):
             key = key.encode('utf-8')
-        if not dir:
+        if not kwargs.get("dir"):
             value = value.encode('utf-8')
-        escaped = dict(key=key, value=value, dir=dir)
+        escaped = dict(key=key, value=value)
         escaped.update(kwargs)
         return escaped
 
