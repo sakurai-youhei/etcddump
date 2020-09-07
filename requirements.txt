@@ -1,1 +1,2 @@
+dnspython<2  # dnspython dropped 2.7, 3.4 and 3.5 from v2.0
 python-etcd>=0.3.0

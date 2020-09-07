@@ -28,5 +28,5 @@ setup(name='etcddump',
       include_package_data=True,
       zip_safe=False,
       packages=find_packages(),
-      install_requires=['python-etcd>=0.3.0'],
+      install_requires=['dnspython<2', 'python-etcd>=0.3.0'],
       entry_points={'console_scripts': ['etcdumper = etcddump.cli:main']})
